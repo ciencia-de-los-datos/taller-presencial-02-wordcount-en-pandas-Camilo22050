@@ -12,6 +12,14 @@ def load_input(input_directory):
     # un DataFrame de Pandas. Cada línea del archivo de texto debe ser una
     # entrada en el DataFrame.
     #
+    filenames = glob.glob(f"""{input_directory}/*.txt""")
+    dataframes = []
+    for filename in filenames:
+         dataframes.append(pd.read_csv(filename, sep="\t", header=None, names=["text"]))
+
+    concat = pd.concat(dataframes,ignore_index=True)
+    return concat
+
 
 
 def clean_text(dataframe):
@@ -19,14 +27,28 @@ def clean_text(dataframe):
     #
     # Elimine la puntuación y convierta el texto a minúsculas.
     #
+    dataframe = dataframe.copy()
+    dataframe["text"] = dataframe["text"].str.lower()
+    dataframe["text"] = dataframe["text"].str.replace(".","")
+    dataframe["text"] = dataframe["text"].str.replace(",","")
+    return dataframe
 
 
 def count_words(dataframe):
     """Word count"""
+    dataframe = dataframe.copy()
+    dataframe["text"] = dataframe["text"].str.split()
+    dataframe = dataframe.explode("text")
+    dataframe["count"] = 1
+    dataframe = dataframe.groupby("text").agg({"count":"sum"})
+    return dataframe
+
 
 
 def save_output(dataframe, output_filename):
     """Save output to a file."""
+    dataframe.to_csv(output_filename,sep="\t", index=True, header=False)
+
 
 
 #
@@ -34,7 +56,10 @@ def save_output(dataframe, output_filename):
 #
 def run(input_directory, output_filename):
     """Call all functions."""
-
+    df = load_input(input_directory)
+    df = clean_text(df)
+    df = count_words(df)
+    save_output(df,output_filename)
 
 if __name__ == "__main__":
     run(
